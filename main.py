@@ -4,6 +4,9 @@ import os
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
+print("START")
+print("CHAT_ID =", CHAT_ID)
+
 r = requests.post(
     f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
     json={
@@ -12,5 +15,7 @@ r = requests.post(
     }
 )
 
-print(r.status_code)
-print(r.text)
+print("STATUS =", r.status_code)
+print("BODY =", r.text)
+
+raise Exception("FORCE STOP")
