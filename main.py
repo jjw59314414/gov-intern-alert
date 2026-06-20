@@ -39,7 +39,7 @@ def save_seen(seen):
 
 seen = load_seen()
 
-html = requests.get(URL, timeout=20).text
+html = requests.get(URL, timeout=60).text
 soup = BeautifulSoup(html, "html.parser")
 
 rows = soup.select("tbody tr")
