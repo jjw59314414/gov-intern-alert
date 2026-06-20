@@ -39,7 +39,17 @@ def save_seen(seen):
 
 seen = load_seen()
 
-html = requests.get(URL, timeout=60).text
+try:
+    html = requests.get(
+        URL,
+        timeout=60,
+        headers={
+            "User-Agent": "Mozilla/5.0"
+        }
+    ).text
+except Exception as e:
+    send_telegram(f"나라일터 접속 실패\n{e}")
+    raise
 soup = BeautifulSoup(html, "html.parser")
 
 rows = soup.select("tbody tr")
