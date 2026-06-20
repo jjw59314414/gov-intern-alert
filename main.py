@@ -1,6 +1,8 @@
 import os
 import requests
 from bs4 import BeautifulSoup
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
@@ -13,6 +15,9 @@ KEYWORDS = [
 ]
 
 
+# -------------------------
+# Telegram
+# -------------------------
 def send_telegram(msg):
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
@@ -23,6 +28,9 @@ def send_telegram(msg):
     )
 
 
+# -------------------------
+# Seen load/save
+# -------------------------
 def load_seen():
     if not os.path.exists("seen_posts.txt"):
         return set()
@@ -37,24 +45,54 @@ def save_seen(seen):
             f.write(item + "\n")
 
 
+# -------------------------
+# Requests session (retry 적용)
+# -------------------------
+retry = Retry(
+    total=5,
+    backoff_factor=2,
+    status_forcelist=[500, 502, 503, 504],
+    allowed_methods=["GET"]
+)
+
+session = requests.Session()
+adapter = HTTPAdapter(max_retries=retry)
+
+session.mount("http://", adapter)
+session.mount("https://", adapter)
+
+
+# -------------------------
+# Load seen posts
+# -------------------------
 seen = load_seen()
 
-try:
-    html = requests.get(
-        URL,
-        timeout=60,
-        headers={
-            "User-Agent": "Mozilla/5.0"
-        }
-    ).text
-except Exception as e:
-    send_telegram(f"나라일터 접속 실패\n{e}")
-    raise
-soup = BeautifulSoup(html, "html.parser")
 
+# -------------------------
+# Fetch HTML (핵심 안정화 부분)
+# -------------------------
+try:
+    response = session.get(
+        URL,
+        timeout=(10, 30),
+        headers={"User-Agent": "Mozilla/5.0"}
+    )
+    response.raise_for_status()
+    html = response.text
+
+except requests.exceptions.RequestException as e:
+    send_telegram(f"🚨 나라일터 접속 실패\n{e}")
+    raise
+
+
+# -------------------------
+# Parse
+# -------------------------
+soup = BeautifulSoup(html, "html.parser")
 rows = soup.select("tbody tr")
 
 updated = False
+
 
 for row in rows:
     a = row.find("a")
@@ -101,5 +139,9 @@ for row in rows:
     seen.add(post_id)
     updated = True
 
+
+# -------------------------
+# Save only if updated
+# -------------------------
 if updated:
     save_seen(seen)
