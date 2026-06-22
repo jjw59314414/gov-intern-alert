@@ -96,7 +96,7 @@ def main():
         html = response.text
 
     except Exception as e:
-        send_telegram(f"🚨 나라일터 접속 실패\n{e}")
+        send_telegram(f"나라일터 접속 시도\n{e}")
         print("크롤링 실패:", e)
         return
 
